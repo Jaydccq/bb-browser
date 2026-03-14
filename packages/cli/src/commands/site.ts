@@ -372,9 +372,15 @@ async function siteRun(
   const evalResp: Response = await sendCommand(evalReq);
 
   if (!evalResp.success) {
-    console.error(`[error] site ${name}: eval failed.`);
-    console.error(`  ${evalResp.error}`);
-    console.error(`  Check: is ${site.domain} open and logged in?`);
+    const hint = site.domain
+      ? `Open https://${site.domain} in your browser, make sure you are logged in, then retry.`
+      : undefined;
+    if (options.json) {
+      console.log(JSON.stringify({ id: evalReq.id, success: false, error: evalResp.error || "eval failed", hint }));
+    } else {
+      console.error(`[error] site ${name}: ${evalResp.error || "eval failed"}`);
+      if (hint) console.error(`  Hint: ${hint}`);
+    }
     process.exit(1);
   }
 
@@ -399,11 +405,20 @@ async function siteRun(
   // 检查 adapter 返回的 error
   if (typeof parsed === "object" && parsed !== null && "error" in parsed) {
     const errObj = parsed as { error: string; hint?: string };
+
+    // 检测是否为登录问题
+    const errLower = errObj.error.toLowerCase();
+    const isAuthError = /401|403|unauthorized|forbidden|not.?logged|login.?required|sign.?in|auth/i.test(errLower);
+    const loginHint = isAuthError && site.domain
+      ? `Please log in to https://${site.domain} in your browser first, then retry.`
+      : undefined;
+    const hint = errObj.hint || loginHint;
+
     if (options.json) {
-      console.log(JSON.stringify({ id: evalReq.id, success: false, error: errObj.error, hint: errObj.hint }));
+      console.log(JSON.stringify({ id: evalReq.id, success: false, error: errObj.error, hint }));
     } else {
       console.error(`[error] site ${name}: ${errObj.error}`);
-      if (errObj.hint) console.error(`  Hint: ${errObj.hint}`);
+      if (hint) console.error(`  Hint: ${hint}`);
     }
     process.exit(1);
   }
