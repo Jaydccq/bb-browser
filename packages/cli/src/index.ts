@@ -734,4 +734,4 @@ Full guide:        https://github.com/epiral/bb-sites/blob/main/SKILL.md`);
   }
 }
 
-main();
+main().then(() => process.exit(0));

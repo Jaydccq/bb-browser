@@ -104,7 +104,11 @@ async function getJsonVersion(host: string, port: number): Promise<{ webSocketDe
 function connectWebSocket(url: string): Promise<WebSocket> {
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(url);
-    ws.once("open", () => resolve(ws));
+    ws.once("open", () => {
+      // Allow Node.js to exit even if the WebSocket is still open
+      (ws as any)._socket?.unref?.();
+      resolve(ws);
+    });
     ws.once("error", reject);
   });
 }
