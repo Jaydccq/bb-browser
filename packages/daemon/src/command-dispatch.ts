@@ -63,14 +63,9 @@ function buildRequestError(error: unknown): Error {
 
 /**
  * Extended response data with daemon-specific fields.
- * Relaxes some types from ResponseData where CDP uses strings
- * but the original protocol defined numbers (tabId, frameId).
+ * Relaxes frameInfo.frameId to accept string (CDP uses string frame IDs).
  */
-type ExtResponseData = Omit<ResponseData, "tabId" | "tabs" | "frameInfo"> & {
-  tab?: string;
-  seq?: number;
-  cursor?: number;
-  tabId?: string | number;
+type ExtResponseData = Omit<ResponseData, "tabs" | "frameInfo"> & {
   tabs?: Array<Record<string, unknown>>;
   frameInfo?: {
     selector?: string;
@@ -948,11 +943,11 @@ export async function dispatchRequest(
       switch (subCommand) {
         case "requests": {
           const queryResult = tab.getNetworkRequests({
-            since: (request as any).since,
+            since: request.since,
             filter: request.filter,
-            method: (request as any).method,
-            status: (request as any).status,
-            limit: (request as any).limit,
+            method: request.method,
+            status: request.status,
+            limit: request.limit,
           });
 
           let items = queryResult.items;
@@ -1002,9 +997,9 @@ export async function dispatchRequest(
       switch (subCommand) {
         case "get": {
           const queryResult = tab.getConsoleMessages({
-            since: (request as any).since,
+            since: request.since,
             filter: request.filter,
-            limit: (request as any).limit,
+            limit: request.limit,
           });
           return ok(request.id, {
             consoleMessages: queryResult.items,
@@ -1028,9 +1023,9 @@ export async function dispatchRequest(
       switch (subCommand) {
         case "get": {
           const queryResult = tab.getJSErrors({
-            since: (request as any).since,
+            since: request.since,
             filter: request.filter,
-            limit: (request as any).limit,
+            limit: request.limit,
           });
           return ok(request.id, {
             jsErrors: queryResult.items,

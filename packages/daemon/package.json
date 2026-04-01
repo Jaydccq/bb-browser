@@ -11,6 +11,8 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "test": "tsx --test src/__tests__/*.test.ts",
+    "test:drift": "tsx --test src/__tests__/protocol-drift.test.ts",
     "lint": "eslint src tsup.config.ts",
     "typecheck": "tsc --noEmit"
   },
@@ -20,6 +22,7 @@
   "devDependencies": {
     "@types/node": "^22.0.0",
     "tsup": "^8.0.0",
+    "tsx": "^4.20.6",
     "typescript": "^5.7.0",
     "ws": "^8.19.0"
   }
