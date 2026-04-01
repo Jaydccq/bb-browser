@@ -251,10 +251,10 @@ describe("TabState", () => {
     it("status '4xx' filters 400-499", () => {
       const mgr = makeManager();
       const tab = makeTab(mgr);
-      const r1 = addNetworkRequest(tab, { requestId: "r1" });
-      const r2 = addNetworkRequest(tab, { requestId: "r2" });
-      const r3 = addNetworkRequest(tab, { requestId: "r3" });
-      const r4 = addNetworkRequest(tab, { requestId: "r4" });
+      addNetworkRequest(tab, { requestId: "r1" });
+      addNetworkRequest(tab, { requestId: "r2" });
+      addNetworkRequest(tab, { requestId: "r3" });
+      addNetworkRequest(tab, { requestId: "r4" });
       tab.updateNetworkResponse("r1", { status: 200 });
       tab.updateNetworkResponse("r2", { status: 404 });
       tab.updateNetworkResponse("r3", { status: 403 });
@@ -267,8 +267,8 @@ describe("TabState", () => {
     it("status '200' filters exact code", () => {
       const mgr = makeManager();
       const tab = makeTab(mgr);
-      const r1 = addNetworkRequest(tab, { requestId: "r1" });
-      const r2 = addNetworkRequest(tab, { requestId: "r2" });
+      addNetworkRequest(tab, { requestId: "r1" });
+      addNetworkRequest(tab, { requestId: "r2" });
       tab.updateNetworkResponse("r1", { status: 200 });
       tab.updateNetworkResponse("r2", { status: 201 });
       const { items } = tab.getNetworkRequests({ status: "200" });

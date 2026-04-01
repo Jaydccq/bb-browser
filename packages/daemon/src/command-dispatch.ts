@@ -14,7 +14,6 @@ import type {
   ResponseData,
   RefInfo,
   SnapshotData,
-  TabInfo,
   TraceEvent,
   TraceStatus,
 } from "@bb-browser/shared";
@@ -24,8 +23,6 @@ import type { TabState } from "./tab-state.js";
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
-type JsonObject = Record<string, unknown>;
 
 interface RawDomTextNode {
   type: "TEXT_NODE";
@@ -76,8 +73,7 @@ type ExtResponseData = Omit<ResponseData, "tabs" | "frameInfo"> & {
 };
 
 function ok(id: string, data?: ExtResponseData): Response {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return { id, success: true, data: data as any };
+  return { id, success: true, data: data as ResponseData };
 }
 
 function fail(id: string, error: unknown): Response {
@@ -950,7 +946,7 @@ export async function dispatchRequest(
             limit: request.limit,
           });
 
-          let items = queryResult.items;
+          const items = queryResult.items;
           // Fetch response bodies if requested
           if (request.withBody) {
             await Promise.all(

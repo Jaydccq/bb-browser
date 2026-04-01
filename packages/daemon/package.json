@@ -13,7 +13,7 @@
     "dev": "tsup --watch",
     "test": "tsx --test src/__tests__/*.test.ts",
     "test:drift": "tsx --test src/__tests__/protocol-drift.test.ts",
-    "lint": "eslint src tsup.config.ts",
+    "lint": "eslint src tsup.config.ts --ignore-pattern 'src/**/*.d.ts'",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
