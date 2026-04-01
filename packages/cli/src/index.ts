@@ -122,6 +122,7 @@ interface ParsedArgs {
     jq?: string;
     openclaw?: boolean;
     port?: number;
+    since?: string;
   };
 }
 
@@ -198,6 +199,15 @@ function parseArgs(argv: string[]): ParsedArgs {
     } else if (arg === "--tab") {
       // --tab 参数及其值，无论出现在命令前后都跳过
       skipNext = true;
+    } else if (arg === "--since") {
+      // --since 参数及其值，无论出现在命令前后都跳过
+      skipNext = true;
+    } else if (arg === "--method") {
+      // --method 参数及其值，由子命令通过 process.argv 解析
+      skipNext = true;
+    } else if (arg === "--status") {
+      // --status 参数及其值，由子命令通过 process.argv 解析
+      skipNext = true;
     } else if (arg.startsWith("-")) {
       // 未知选项，忽略
     } else if (result.command === null) {
@@ -220,7 +230,13 @@ async function main(): Promise<void> {
   // 解析全局 --tab 参数
   const tabArgIdx = process.argv.indexOf('--tab');
   const globalTabId = tabArgIdx >= 0 && process.argv[tabArgIdx + 1]
-    ? parseInt(process.argv[tabArgIdx + 1], 10)
+    ? process.argv[tabArgIdx + 1]
+    : undefined;
+
+  // 解析全局 --since 参数
+  const sinceArgIdx = process.argv.indexOf('--since');
+  const globalSince = sinceArgIdx >= 0 && process.argv[sinceArgIdx + 1]
+    ? process.argv[sinceArgIdx + 1]
     : undefined;
 
   // 处理全局选项
@@ -476,7 +492,7 @@ async function main(): Promise<void> {
       }
 
       case "tab": {
-        await tabCommand(parsed.args, { json: parsed.flags.json });
+        await tabCommand(parsed.args, { json: parsed.flags.json, globalTabId });
         break;
       }
 
@@ -525,19 +541,23 @@ async function main(): Promise<void> {
         const withBody = process.argv.includes("--with-body");
         const bodyIndex = process.argv.findIndex(a => a === "--body");
         const body = bodyIndex >= 0 ? process.argv[bodyIndex + 1] : undefined;
-        await networkCommand(subCommand, urlOrFilter, { json: parsed.flags.json, abort, body, withBody, tabId: globalTabId });
+        const methodIndex = process.argv.findIndex(a => a === "--method");
+        const method = methodIndex >= 0 ? process.argv[methodIndex + 1] : undefined;
+        const statusIndex = process.argv.findIndex(a => a === "--status");
+        const statusFilter = statusIndex >= 0 ? process.argv[statusIndex + 1] : undefined;
+        await networkCommand(subCommand, urlOrFilter, { json: parsed.flags.json, abort, body, withBody, tabId: globalTabId, since: globalSince, method, status: statusFilter });
         break;
       }
 
       case "console": {
         const clear = process.argv.includes("--clear");
-        await consoleCommand({ json: parsed.flags.json, clear, tabId: globalTabId });
+        await consoleCommand({ json: parsed.flags.json, clear, tabId: globalTabId, since: globalSince });
         break;
       }
 
       case "errors": {
         const clear = process.argv.includes("--clear");
-        await errorsCommand({ json: parsed.flags.json, clear, tabId: globalTabId });
+        await errorsCommand({ json: parsed.flags.json, clear, tabId: globalTabId, since: globalSince });
         break;
       }
 

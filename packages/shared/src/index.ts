@@ -5,12 +5,20 @@
 
 export {
   type ActionType,
+  type ConsoleMessageInfo,
   type DaemonStatus,
+  type JSErrorInfo,
+  type NetworkRequestInfo,
+  type RefInfo,
   type Request,
   type Response,
   type ResponseData,
+  type SnapshotData,
   type SSEEvent,
   type SSEEventType,
+  type TabInfo,
+  type TraceEvent,
+  type TraceStatus,
   generateId,
 } from "./protocol.js";
 
