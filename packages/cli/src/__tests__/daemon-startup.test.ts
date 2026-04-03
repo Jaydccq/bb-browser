@@ -349,3 +349,81 @@ describe("core bug: daemon spawned without --cdp-port fails silently (#136)", ()
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Test: 503 error includes diagnostics (#136 follow-up)
+// ---------------------------------------------------------------------------
+
+describe("CDP 503 error includes diagnostics", () => {
+  let daemonPid: number | null = null;
+
+  afterEach(async () => {
+    if (daemonPid && isProcessAlive(daemonPid)) {
+      killProcess(daemonPid);
+      await new Promise(r => setTimeout(r, 500));
+    }
+    daemonPid = null;
+    try { unlinkSync(path.join(os.tmpdir(), `bb-browser-test-startup-${process.pid}`, "daemon.json")); } catch {}
+  });
+
+  it("503 response includes CDP target, reason, and hint when Chrome not connected", async () => {
+    // Start a fake CDP that responds to /json/version but fails WebSocket upgrade
+    const cdpPort = 39989;
+    const daemonPort = 39988;
+    const fakeCdp = await startFakeCdpServer(cdpPort);
+
+    try {
+      // Start daemon — it will connect to fake CDP, /json/version succeeds but WS fails
+      const child = spawn(TSX, [DAEMON_ENTRY, "--cdp-port", String(cdpPort), "--port", String(daemonPort)], {
+        detached: true,
+        stdio: "ignore",
+      });
+      child.unref();
+
+      const info = await waitForDaemonJson();
+      daemonPid = info.pid;
+
+      // Wait for daemon to try and fail CDP WebSocket connection
+      await new Promise(r => setTimeout(r, 2000));
+
+      // Send a command — should get 503 with diagnostics, NOT wait 30 seconds
+      const start = Date.now();
+      const response = await new Promise<Record<string, unknown>>((resolve, reject) => {
+        const req = http.request({
+          hostname: info.host,
+          port: info.port,
+          path: "/command",
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${info.token}`,
+            "Content-Type": "application/json",
+          },
+          timeout: 10000,
+        }, res => {
+          const chunks: Buffer[] = [];
+          res.on("data", (c: Buffer) => chunks.push(c));
+          res.on("end", () => {
+            try { resolve(JSON.parse(Buffer.concat(chunks).toString())); }
+            catch (e) { reject(e); }
+          });
+        });
+        req.on("error", reject);
+        req.write(JSON.stringify({ id: "diag-test", action: "tab_list" }));
+        req.end();
+      });
+      const elapsed = Date.now() - start;
+
+      // Should NOT wait 30 seconds
+      assert.ok(elapsed < 10000, `should respond quickly, not wait 30s (took ${elapsed}ms)`);
+
+      // Should have diagnostics
+      assert.equal(response.success, false);
+      assert.ok(typeof response.error === "string", "error should be a string");
+      assert.match(response.error as string, /Chrome not connected/, "error should mention Chrome");
+      assert.ok(typeof response.reason === "string", "should include reason");
+      assert.ok(typeof response.hint === "string", "should include hint");
+    } finally {
+      await new Promise<void>(resolve => fakeCdp.close(() => resolve()));
+    }
+  });
+});
