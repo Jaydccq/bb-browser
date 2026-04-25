@@ -60,10 +60,6 @@ async function builtinJobs(args) {
     const page = clampInt(values.page || base.searchParams.get("page") || current.searchParams.get("page"), 1, 1, 1000);
 
     base.searchParams.set("search", query);
-    base.searchParams.set("allLocations", "true");
-    base.searchParams.delete("city");
-    base.searchParams.delete("state");
-    base.searchParams.delete("country");
     base.searchParams.delete("page");
     if (page > 1) base.searchParams.set("page", String(page));
     return base.toString();
@@ -109,8 +105,8 @@ async function builtinJobs(args) {
         title,
         company: cleanText(card.querySelector('a[data-id="company-title"]')?.textContent) || companyFromLogo(card),
         postedAgo: firstMatch(text, /\b(?:Reposted\s+)?(?:An|\d+)\s+\w+\s+Ago\b|\bYesterday\b/i),
-        workModel: attrs.find((value) => /^(remote|hybrid|on-?site)$/i.test(value)) || "",
-        location: attrs.find((value) => !/^(remote|hybrid|on-?site)$/i.test(value) && !looksLikeSalary(value) && !looksLikeLevel(value)) || "",
+        workModel: attrs.find(looksLikeWorkModel) || "",
+        location: attrs.find((value) => !looksLikeWorkModel(value) && !looksLikeSalary(value) && !looksLikeLevel(value)) || "",
         salary: attrs.find(looksLikeSalary) || "",
         seniority: attrs.find(looksLikeLevel) || "",
         easyApply: /\bEasy Apply\b/i.test(text),
@@ -168,6 +164,10 @@ async function builtinJobs(args) {
 
   function looksLikeSalary(value) {
     return /\$|\b\d+\s*K\b|\bAnnually\b|\bHourly\b|\bper\s+(?:year|hour|month)\b/i.test(value);
+  }
+
+  function looksLikeWorkModel(value) {
+    return /^(remote|hybrid|on-?site|in-?office)(?:\s+or\s+(?:remote|hybrid|on-?site|in-?office))*$/i.test(value);
   }
 
   function looksLikeLevel(value) {
